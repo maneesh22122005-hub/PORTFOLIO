@@ -530,7 +530,11 @@ const CanvasScene = ({
       <DoubleHelix />
       <ServerRing count={isMobile ? 12 : 24} />
       <ParticleField count={isMobile ? 300 : 800} />
-      {/* Post Processing */}
+      {/* Post Processing — temporarily disabled to isolate a runtime crash.
+          If the site works without errors after this change, the bug is
+          confirmed to be inside the postprocessing pipeline below and we
+          can re-enable it piece by piece to find the exact culprit. */}
+      {/*
       <EffectComposer multisampling={8}>
         <Bloom
           intensity={1.2}
@@ -542,6 +546,7 @@ const CanvasScene = ({
         <Vignette eskil={false} offset={0.3} darkness={1.2} />
         <Noise opacity={0.02} />
       </EffectComposer>
+      */}
     </>
   );
 };
