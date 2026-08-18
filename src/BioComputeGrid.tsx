@@ -173,28 +173,36 @@ const DoubleHelix = ({ radius = 1.5, height = 12, turns = 3, strandRadius = 0.08
 
   return (
     <group ref={groupRef}>
-      <HelixStrandMaterial
-        attach="material"
-        uTime={timeRef.current}
-        uColorA="#00f2fe"
-        uColorB="#10b981"
-        uFresnelPower={2.5}
-        uFresnelIntensity={1.2}
-      />
       {/* Strand 1 */}
       <mesh
         geometry={new THREE.TubeGeometry(helixData.strandCurve1, helixData.strandCurve1.points.length * 2, strandRadius, 8, false)}
-        material={HelixStrandMaterial}
         castShadow
         receiveShadow
-      />
+      >
+        <helixStrandMaterial
+          attach="material"
+          uTime={timeRef.current}
+          uColorA="#00f2fe"
+          uColorB="#10b981"
+          uFresnelPower={2.5}
+          uFresnelIntensity={1.2}
+        />
+      </mesh>
       {/* Strand 2 */}
       <mesh
         geometry={new THREE.TubeGeometry(helixData.strandCurve2, helixData.strandCurve2.points.length * 2, strandRadius, 8, false)}
-        material={HelixStrandMaterial}
         castShadow
         receiveShadow
-      />
+      >
+        <helixStrandMaterial
+          attach="material"
+          uTime={timeRef.current}
+          uColorA="#00f2fe"
+          uColorB="#10b981"
+          uFresnelPower={2.5}
+          uFresnelIntensity={1.2}
+        />
+      </mesh>
       {/* Base Pair Rungs */}
       {helixData.rungs.map((rung, i) => (
         <mesh
