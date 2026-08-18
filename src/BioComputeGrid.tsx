@@ -41,6 +41,8 @@ import {
   Sun,
   Moon,
 } from 'lucide-react';
+import CursorHeadCanvas from './CursorHead';
+import DnaHelixTerminalSection from './DnaHelixTerminalSection';
 
 // ==========================================
 // CUSTOM SHADERS
@@ -173,36 +175,28 @@ const DoubleHelix = ({ radius = 1.5, height = 12, turns = 3, strandRadius = 0.08
 
   return (
     <group ref={groupRef}>
+      <HelixStrandMaterial
+        attach="material"
+        uTime={timeRef.current}
+        uColorA="#00f2fe"
+        uColorB="#10b981"
+        uFresnelPower={2.5}
+        uFresnelIntensity={1.2}
+      />
       {/* Strand 1 */}
       <mesh
         geometry={new THREE.TubeGeometry(helixData.strandCurve1, helixData.strandCurve1.points.length * 2, strandRadius, 8, false)}
+        material={HelixStrandMaterial}
         castShadow
         receiveShadow
-      >
-        <helixStrandMaterial
-          attach="material"
-          uTime={timeRef.current}
-          uColorA="#00f2fe"
-          uColorB="#10b981"
-          uFresnelPower={2.5}
-          uFresnelIntensity={1.2}
-        />
-      </mesh>
+      />
       {/* Strand 2 */}
       <mesh
         geometry={new THREE.TubeGeometry(helixData.strandCurve2, helixData.strandCurve2.points.length * 2, strandRadius, 8, false)}
+        material={HelixStrandMaterial}
         castShadow
         receiveShadow
-      >
-        <helixStrandMaterial
-          attach="material"
-          uTime={timeRef.current}
-          uColorA="#00f2fe"
-          uColorB="#10b981"
-          uFresnelPower={2.5}
-          uFresnelIntensity={1.2}
-        />
-      </mesh>
+      />
       {/* Base Pair Rungs */}
       {helixData.rungs.map((rung, i) => (
         <mesh
@@ -428,54 +422,6 @@ const ParticleField = ({ count = 800, radius = 15 }) => {
       />
     </points>
   );
-};
-
-// Camera animation controller — must live inside <Canvas> since it uses useFrame
-const CameraController = ({
-  cameraState,
-  setCameraState,
-  cameraTargetRef,
-  scrollProgressRef,
-}) => {
-  useFrame((state, delta) => {
-    const { camera } = state;
-    const target = cameraTargetRef.current;
-
-    if (cameraState === 'zooming-in') {
-      // Dolly in to helix core
-      target.z = THREE.MathUtils.lerp(target.z, 4, delta * 3);
-      target.fov = THREE.MathUtils.lerp(target.fov, 30, delta * 3);
-      if (Math.abs(target.z - 4) < 0.1) {
-        setCameraState('settled');
-      }
-    } else if (cameraState === 'settled') {
-      // Pull back to reveal full scene
-      target.z = THREE.MathUtils.lerp(target.z, 25, delta * 2);
-      target.fov = THREE.MathUtils.lerp(target.fov, 50, delta * 2);
-      if (Math.abs(target.z - 25) < 0.1) {
-        setCameraState('idle');
-      }
-    } else {
-      // Idle parallax based on scroll
-      const scrollY = window.scrollY;
-      const maxScroll = document.body.scrollHeight - window.innerHeight;
-      scrollProgressRef.current = THREE.MathUtils.lerp(
-        scrollProgressRef.current,
-        scrollY / maxScroll,
-        delta * 5
-      );
-      const progress = scrollProgressRef.current;
-      target.x = Math.sin(progress * Math.PI * 2) * 2;
-      target.y = Math.cos(progress * Math.PI) * 1;
-    }
-
-    // Apply camera target
-    camera.position.lerp(new THREE.Vector3(target.x, target.y, target.z), delta * 5);
-    camera.fov = THREE.MathUtils.lerp(camera.fov, target.fov, delta * 5);
-    camera.updateProjectionMatrix();
-  });
-
-  return null;
 };
 
 // Main 3D Scene
@@ -996,7 +942,7 @@ const BioComputeGrid = () => {
 
   // Intersection Observer for active section
   useEffect(() => {
-    const sections = ['hero', 'about', 'skills', 'projects', 'contact'];
+    const sections = ['hero', 'about', 'terminal', 'skills', 'projects', 'contact'];
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -1029,6 +975,45 @@ const BioComputeGrid = () => {
     setTimeout(() => scrollToSection('about'), 500);
   }, [scrollToSection]);
 
+  // Camera animation logic
+  useFrame((state, delta) => {
+    const { camera } = state;
+    const target = cameraTargetRef.current;
+
+    if (cameraState === 'zooming-in') {
+      // Dolly in to helix core
+      target.z = THREE.MathUtils.lerp(target.z, 4, delta * 3);
+      target.fov = THREE.MathUtils.lerp(target.fov, 30, delta * 3);
+      if (Math.abs(target.z - 4) < 0.1) {
+        setCameraState('settled');
+      }
+    } else if (cameraState === 'settled') {
+      // Pull back to reveal full scene
+      target.z = THREE.MathUtils.lerp(target.z, 25, delta * 2);
+      target.fov = THREE.MathUtils.lerp(target.fov, 50, delta * 2);
+      if (Math.abs(target.z - 25) < 0.1) {
+        setCameraState('idle');
+      }
+    } else {
+      // Idle parallax based on scroll
+      const scrollY = window.scrollY;
+      const maxScroll = document.body.scrollHeight - window.innerHeight;
+      scrollProgressRef.current = THREE.MathUtils.lerp(
+        scrollProgressRef.current,
+        scrollY / maxScroll,
+        delta * 5
+      );
+      const progress = scrollProgressRef.current;
+      target.x = Math.sin(progress * Math.PI * 2) * 2;
+      target.y = Math.cos(progress * Math.PI) * 1;
+    }
+
+    // Apply camera target
+    camera.position.lerp(new THREE.Vector3(target.x, target.y, target.z), delta * 5);
+    camera.fov = THREE.MathUtils.lerp(camera.fov, target.fov, delta * 5);
+    camera.updateProjectionMatrix();
+  });
+
   // Mouse move handler for particle repel
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -1051,12 +1036,6 @@ const BioComputeGrid = () => {
           shadows
           shadowMapType={THREE.PCFSoftShadowMap}
         >
-          <CameraController
-            cameraState={cameraState}
-            setCameraState={setCameraState}
-            cameraTargetRef={cameraTargetRef}
-            scrollProgressRef={scrollProgressRef}
-          />
           <Suspense fallback={null}>
             <CanvasScene
               isMobile={isMobile}
@@ -1089,41 +1068,57 @@ const BioComputeGrid = () => {
           />
           <section id="about" className="py-24 px-6 bg-slate-950/50">
             <div className="max-w-7xl mx-auto">
-              <motion.div
-                className="prose prose-invert max-w-3xl mx-auto text-center"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">About</h2>
-                <p className="text-lg text-slate-300 leading-relaxed mb-6">
-                  I'm a Computational Biologist and HPC Engineer specializing in building scalable machine learning
-                  infrastructure for genomic data analysis. My work sits at the intersection of high-performance computing,
-                  bioinformatics, and distributed systems.
-                </p>
-                <p className="text-lg text-slate-300 leading-relaxed mb-6">
-                  Currently researching at SSSIHL, focusing on optimizing distributed training workflows for large-scale
-                  biological sequence models on SLURM-managed clusters. Passionate about open-source tooling for
-                  computational biology and reproducible research practices.
-                </p>
-                <div className="flex flex-wrap justify-center gap-4 mt-8">
-                  <span className="px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-sm">
-                    Python / R / C++
-                  </span>
-                  <span className="px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-sm">
-                    SLURM / MPI / Kubernetes
-                  </span>
-                  <span className="px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-sm">
-                    PyTorch / JAX / TensorFlow
-                  </span>
-                  <span className="px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-sm">
-                    Nextflow / Snakemake
-                  </span>
-                </div>
-              </motion.div>
+              <div className="grid md:grid-cols-[1fr_auto] gap-10 items-center">
+                <motion.div
+                  className="prose prose-invert max-w-3xl md:text-left text-center mx-auto md:mx-0"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">About</h2>
+                  <p className="text-lg text-slate-300 leading-relaxed mb-6">
+                    I'm a Computational Biologist and HPC Engineer specializing in building scalable machine learning
+                    infrastructure for genomic data analysis. My work sits at the intersection of high-performance computing,
+                    bioinformatics, and distributed systems.
+                  </p>
+                  <p className="text-lg text-slate-300 leading-relaxed mb-6">
+                    Currently researching at SSSIHL, focusing on optimizing distributed training workflows for large-scale
+                    biological sequence models on SLURM-managed clusters. Passionate about open-source tooling for
+                    computational biology and reproducible research practices.
+                  </p>
+                  <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-8">
+                    <span className="px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-sm">
+                      Python / R / C++
+                    </span>
+                    <span className="px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-sm">
+                      SLURM / MPI / Kubernetes
+                    </span>
+                    <span className="px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-sm">
+                      PyTorch / JAX / TensorFlow
+                    </span>
+                    <span className="px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-sm">
+                      Nextflow / Snakemake
+                    </span>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  className="w-[260px] h-[260px] sm:w-[320px] sm:h-[320px] mx-auto shrink-0"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
+                >
+                  <CursorHeadCanvas className="w-full h-full" />
+                  <p className="text-center text-slate-500 text-xs mt-2 font-mono">
+                    move your cursor
+                  </p>
+                </motion.div>
+              </div>
             </div>
           </section>
+          <DnaHelixTerminalSection />
           <SkillsGrid isReducedMotion={isReducedMotion} />
           <ProjectHighlight isReducedMotion={isReducedMotion} />
         </main>
